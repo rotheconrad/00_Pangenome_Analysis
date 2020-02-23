@@ -1,11 +1,17 @@
-# 00_Scripts_General
+# Pangenome Analysis Pipeline using Prodigal and CD-HIT
 
- This is a general collection of Scripts I've written for file manipulation, data analysis, and bioinformatics purposes. Scripts that generate plots typically have an _plot(s)_ in the file name.
+This is a new repo. I'm still working on it.
 
+Scripts written for Python version 3.6+
 
- Scripts are written for python versions 3.6+  
- Usage instructions can be obtained by typing: _python scriptname.py -h_
+Information for the scripts can be obtained by executing:
 
+```bash
+python scriptname.py -h
+```
 
-Typical required packages are pandas, matplotlib, numpy, and scipy.
-I try to include a list of required packages for the script in the print out for _python scriptname.py -h_.
+Currently, if you've clustered sequences with CD-HIT from multiple genomes, the clstr to binary matrix script will turn the CD-HIT cluster file into a binary matrix with genes as the rows and genomes as the columns. This script needs to be modified at line 68 so the genomeID variable retrieves the unique genomeID from your fasta sequence names.
+
+Once you have a binary matrix, the calculate model plot script will build some nice output like so:
+
+![alt text](Example_Plot.png "Example Pangenome Curve plot.")
