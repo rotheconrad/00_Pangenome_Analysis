@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-''' Calculate and Plot a Pangenome Rarefaction Curve
+'''Calculate and Plot a Pangenome Rarefaction Curve from multiple trials
 
-Takes a tab separated binary gene presence/absence matrix with genomes
-as the columns and genes as the rows. Genome IDs should be on the 
-first line (row), and gene IDs should in the first column. All other
-values should be either a 0 for gene absent in the genome (column) or
-1 for gene is present in the genome.
+This script reads the B_*org_Rarefaction_Results directory of *.tsv
+files from the PGE_0000_Summary folder output by the PGE pipeline.
+
+It models and plots the Pangnome curves from the multiple random trials
+(experiments) sampled by the PGE pipeline.
 
 Pangenome modelling based on:
 Zhang et. al. 2018, 10.3389/fmicb.2018.00577
@@ -23,9 +23,10 @@ All rights reserved
 -------------------------------------------
 '''
 
-import argparse
+import argparse, os
 from collections import defaultdict
 import pandas as pd
+import numpy as np
 from lmfit.models import PowerLawModel, ExpressionModel
 import matplotlib
 matplotlib.use('agg')
@@ -35,7 +36,7 @@ from matplotlib.lines import Line2D
 def plot_pangenome_curve(
                         dfout, PLM_pan, PLM_spec,
                         omega_core, omega_new,
-                        org, prm, pc, out, ymax, ystep
+                        org, prm, trials, out, ymax, ystep
                         ):
     ''' This function builds a plot of the pangenome calculations'''
 
@@ -107,10 +108,11 @@ def plot_pangenome_curve(
         )
     ttext = (
         f"Number of Genomes: {len(x)+1}  |  "
-        f"Number of Permutations: {prm}"
+        f"Number of Permutations: {prm}\n"
+        f"Number of Random Trials {trials}"
         )
     ax1.text(
-        0.5, 0.94, ttext,
+        0.5, 0.90, ttext,
         fontsize=22, color='#737373',
         horizontalalignment='center', transform=ax1.transAxes
         )
@@ -277,7 +279,7 @@ def model_decay_curve(dfout, Column):
 
     # Model the Core gene curve using an Exponential Decay Function:
     # Fc = Kc*exp(-N/τc) + Ω
-    print(f'\n\nFitting Exponential Decay function to {Column}')
+    print(f'\nFitting Exponential Decay function to {Column}')
     print('Using Exponential Decay Function: K*exp-(N/\u03C4) + \u03A9')
     # Initialize model
     Custom_Exponential = ExpressionModel(
@@ -309,7 +311,7 @@ def model_pangenome_curve(dfout, Column):
     # Initialize dictionary to store model results
     params = {} # PowerLawModel for Pangenome curve
     # Model the Pangenome curve using a Powerlaw function: Ps = κn^γ
-    print('\n\nFitting PowerLaw function to {Column}')
+    print(f'\nFitting PowerLaw function to {Column}')
     print('Using Power Law Function K*N^\u03B3 ...')
     PLM = PowerLawModel() # Initialize the model
     # Guess starting values from the data
@@ -325,85 +327,72 @@ def model_pangenome_curve(dfout, Column):
                     )
     # Add modeled data to dfout data frame
     dfout[f'{Column}_PLM'] = PLM_Fit.best_fit
+
     # Store K and Gamma parameters 
     params['K'] = float(PLM_Fit.best_values['amplitude'])
     params['Gamma'] = float(PLM_Fit.best_values['exponent'])
 
     return dfout, params
 
-def calculate_pangenome_curve(binary_matrix, prm, c, out):
-    # Read in the binary matrix with first column as gene names (index).
-    df = pd.read_csv(binary_matrix, sep='\t', index_col=0)
+def collect_results(fdir, out):
+    ''' reads directory of tsv files, builds combined dataframe. '''
+
     # Define columns for output data frame
     colout = [
-            'Trial', 'n', 'n/N', 'Pangenome', 'CoreGenome',
+            'Trial', 'Permutation', 'n', 'Pangenome', 'CoreGenome',
             'GenomeSpecific', 'NewGenes', 'NewGeneRatio', 'GenomeLength'
             ]
-    # Initialize output data frame
-    dfout = pd.DataFrame(columns=colout)
-    # Initialize row counter for ouput dataframe
-    rowcount = 0
-    # Set the total number of genomes to n
-    N = df.shape[1]
-    # Calculate the total number of genes per genome
-    genes_per_genome = df.sum(axis=0)
+    # Initialize list to store new rows
+    data = []
+    # Create list of files from tsv directory
+    if fdir[-1] == '/': fdir = fdir[:-1]
+    f_list = [f for f in os.listdir(fdir) if os.path.isfile(f'{fdir}/{f}')]
+    # define number of trials as number of files in fdir
+    trials = len(f_list)
 
-    for j in range(prm):
+    # Read through each file and transform the tsv into extended dictionary
+    for trial, file in enumerate(f_list):
+        # Track trial number = to file number
+        trial_number = trial + 1
+        print(f'Collecting results data from file 1 of {trial_number} ...')
+        # Read results tsv and reconstruct dataframe
+        with open(f'{fdir}/{file}', 'r') as f:
+            skip_header = f.readline()
+            skip_first_genome = f.readline()
+            n = 2
+            for line in f:
+                # initialize empty dict for each line
+                d = {}
+                X = line.rstrip().split('\t')
+                d['Pangenome'] = [int(x) for x in X[6][1:-1].split(', ')]
+                d['CoreGenome'] = [int(x) for x in X[2][1:-1].split(', ')]
+                d['GenomeSpecific'] = [int(x) for x in X[8][1:-1].split(', ')]
+                d['NewGenes'] = [int(x) for x in X[4][1:-1].split(', ')]
+                d['NewGeneRatio'] = [float(x) for x in X[5][1:-1].split(', ')]
+                d['GenomeLength'] = [int(x) for x in X[3][1:-1].split(', ')]
+                steps = len(d['Pangenome'])
 
-        print('Running Permutation:', j+1)
-        # Here I initialize(empty) a dataframe for each permutation.
-        # Then I randomly shuffle the gneome order for each permutation.
+                for i in range(steps):
+                    newrow = [
+                            trial_number,
+                            i+1,
+                            n,
+                            d['Pangenome'][i],
+                            d['CoreGenome'][i],
+                            d['GenomeSpecific'][i],
+                            d['NewGenes'][i],
+                            d['NewGeneRatio'][i],
+                            d['GenomeLength'][i]
+                            ]
+                    data.append(newrow)
 
-        # Initialize dataframe to keep track of permutation
-        dfprm = pd.DataFrame()
-        # Random shuffle the genomes for each permutation
-        dfrand = df.sample(frac=1, axis=1, random_state=j*42)
-        # Set convenient list of genome names (column names)
-        genomes = dfrand.columns.tolist()
+                n += 1
 
-        # Add first genome to dfprm
-        gnm = genomes[0]
-        dfprm[gnm] = dfrand[gnm]
-        # Start the pangenome count
-        pancurve = dfprm.sum(axis=1).values
-        panprev = (pancurve != 0).sum()
+    dfout = pd.DataFrame(data=data, columns=colout)
+    # define permutations as length of one of the lists
+    prms = len(X[6][1:-1].split(', '))
 
-        for n in range(1,N):
-            # Then for each permutation we step through the columns
-            # And calculate values for each genome addition.
-
-            # Set new value for current number of genomes
-            nN = 1 / (n+1)
-            # select current genome name from prm genomes list
-            gnm = genomes[n]
-            # add current genome column to dfprm to step the iteration
-            dfprm[gnm] = dfrand[gnm]
-            # calculate the n/N pangenome values at this step
-            pancurve = dfprm.sum(axis=1).values / (n+1)
-
-            # calculate total pangenome size
-            pan = (pancurve != 0).sum()
-            # calculate core pangenome size
-            core = (pancurve >= c).sum()
-            # calculate genome specific genes
-            gspec = (pancurve == nN).sum()
-            # Grab genome length
-            genlen = genes_per_genome[gnm]
-            # Calculate new genes per genome / the number of genes in genome
-            ngenes = pan - panprev
-            nratio = ngenes / genlen * 100
-            panprev = pan
-
-            # Define new row for dfout dataframe.
-            z = [j+1, n+1, nN, pan, core, gspec, ngenes, nratio, genlen]
-            # Add new row to dfout dataframe
-            dfout.loc[rowcount] = z
-            # increment the rowcount
-            rowcount += 1
-
-    dfout.to_csv(f'{out}_Pangenome_data.tsv', sep='\t')
-
-    return dfout
+    return(dfout, prms, trials)
 
 def main():
 
@@ -413,17 +402,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter
         )
     parser.add_argument(
-        '-m', '--binary_matrix',
+        '-i', '--results_directory',
         help='Please specify the binary.tsv input file!',
         metavar='',
         type=str,
-        required=True
-        )
-    parser.add_argument(
-        '-p', '--number_permutations',
-        help='Please specify how many permutations to run!',
-        metavar='',
-        type=int,
         required=True
         )
     parser.add_argument(
@@ -431,13 +413,6 @@ def main():
         help='Organism_name_experiment ex: Escherichia_coli_0042',
         metavar='',
         type=str,
-        required=True
-        )
-    parser.add_argument(
-        '-c', '--percent_core',
-        help='Percent of genomes with gene for core (eg: 0.9).',
-        metavar='',
-        type=float,
         required=True
         )
     parser.add_argument(
@@ -463,13 +438,10 @@ def main():
         )
     args=vars(parser.parse_args())
 
-    # Run this scripts main function
-    print('\n\nCalculating the rarefaction curve ...\n')
-
-    dfout = calculate_pangenome_curve(
-                            args['binary_matrix'],
-                            args['number_permutations'],
-                            args['percent_core'],
+    print('\n\nRunning Script ...\n\n')
+    # Collect the result data from the tsv files
+    dfout, prms, trials = collect_results(
+                            args['results_directory'],
                             args['output_prefix']
                             )
 
@@ -489,8 +461,8 @@ def main():
                         omega_core,
                         omega_new,
                         args['organism_name'],
-                        args['number_permutations'],
-                        args['percent_core'],
+                        prms,
+                        trials,
                         args['output_prefix'],
                         args['yaxis_max'],
                         args['yaxis_step']
