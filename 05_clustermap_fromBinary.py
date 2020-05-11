@@ -23,7 +23,7 @@ import seaborn as sns
 
 sys.setrecursionlimit(50000)
 
-def plot_clustermap(binary_matrix, core_threshold, w, h, f):
+def plot_clustermap(binary_matrix, core_threshold, w, h, f, excore, exspec):
     ''' Takes a binary matrix input file in tsv format that includes
         a header row and index column and builds a clustermap plot '''
 
@@ -52,6 +52,15 @@ def plot_clustermap(binary_matrix, core_threshold, w, h, f):
     #colors = ['#e0e0e0', '#4d4d4d']
     colors = ['#f0f0f0', '#525252']
     # plot it
+
+    # Exclude core genes if ec flag
+    if excore:
+        df = df[df.sum(axis=1) < c]
+
+    # Exlude genome-specific if es flag
+    if exspec:
+        df = df[df.sum(axis=1) > 1]
+
     g = sns.clustermap(
                     df, figsize=(w,h),
                     metric="euclidean", method="ward",
@@ -129,6 +138,18 @@ def main():
         required=False,
         default=24
         )
+    parser.add_argument(
+        '-ec', '--exclude_core_genes',
+        help='(Optional) Cluster and plot without the core genes.',
+        action='store_true',
+        required=False,
+        )
+    parser.add_argument(
+        '-es', '--exclude_genome_specific_genes',
+        help='(Optional) Cluster and plot without the genome-specific genes.',
+        action='store_true',
+        required=False,
+        )
     args=vars(parser.parse_args())
 
     _ = plot_clustermap(
@@ -137,6 +158,8 @@ def main():
                     args['set_figure_width'],
                     args['set_figure_height'],
                     args['top_text_size'],
+                    args['exclude_core_genes'],
+                    args['exclude_genome_specific_genes']
                     )
 
 if __name__ == "__main__":
