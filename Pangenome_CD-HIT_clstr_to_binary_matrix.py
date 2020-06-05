@@ -65,7 +65,7 @@ def parse_cdhit_clstr(clstr):
                 X = l.rstrip().split(' ') # Split line by space
 
                 # Select Unique Genome ID
-                genomeID = X[1].split('_')[-3]
+                genomeID = X[1].split('-')[1].split('_')[0]
 
                 GenomeIDs[genomeID][clusterID] += 1
                 ClusterIDs[clusterID][genomeID] += 1
