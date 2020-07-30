@@ -95,6 +95,7 @@ def plot_pangenome_curve(
     ax2.set_xlabel('Number of Genomes', fontsize=28)
 
     # Emperical data text
+    total_genomes=len(x)+1
     stext = (
         f"Pangenome Size: {dfmean.Pangenome.tolist()[-1]}  |  "
         f"Core Genes: {dfmean.CoreGenome.tolist()[-1]}  |  "
@@ -106,7 +107,7 @@ def plot_pangenome_curve(
         horizontalalignment='center', transform=ax1.transAxes
         )
     ttext = (
-        f"Number of Genomes: {len(x)+1}  |  "
+        f"Number of Genomes: {total_genomes}  |  "
         f"Number of Permutations: {prm}"
         )
     ax1.text(
@@ -117,7 +118,7 @@ def plot_pangenome_curve(
     mtext = (
         f"Mean Genes per Genome: {int(dfmean.GenomeLength.mean())}  |  "
         f"Mean New Genes per Genome: {int(dfmean.NewGenes.mean())}  |  "
-        f"New Genes at n=100: {int(dfmean.NewGenes.tolist()[-1])}"
+        f"New Genes at n={total_genomes}: {int(dfmean.NewGenes.tolist()[-1])}"
         )
     ax2.text(
         0.5, 0.90, mtext,
@@ -148,7 +149,7 @@ def plot_pangenome_curve(
         horizontalalignment='center', transform=ax1.transAxes
         )
     rtext = (
-        f'Ratio at n=100: {dfmean.NewGeneRatio.tolist()[-1]:.2f}%\n'
+        f'Ratio at n={total_genomes}: {dfmean.NewGeneRatio.tolist()[-1]:.2f}%\n'
         f'New Gene Ratio Model \u03A9 = {omega_new:.2f}%'
         )
     ax2.text(
@@ -391,6 +392,7 @@ def calculate_pangenome_curve(binary_matrix, prm, c, out):
             genlen = genes_per_genome[gnm]
             # Calculate new genes per genome / the number of genes in genome
             ngenes = pan - panprev
+            
             nratio = ngenes / genlen * 100
             panprev = pan
 
