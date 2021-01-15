@@ -1,6 +1,37 @@
-# Pangenome Analysis Pipeline using Prodigal and CD-HIT
+# This pipeline hasn't been polished
+## The Basic Steps are here:
 
-This is a new repo. I'm still working on it.
+Before running CD-HIT:
+
+Run Prodigal to get the gene predictions in nucleotide format. It's also a good idea to have prodigal write the amino acids as well. This way you will have both nucleotide and amino acid files for the same genes sharing the same names.
+
+01: Before running Prodigal. Rename the contigs of the MAGs with a unique ID. For my pangenome scripts it is important that the fasta sequence IDs look like this: >UniqueID_RestoftheName
+
+My pangenome scripts use this UniqueID part.
+
+Concatenate the genes of the MAGs/Genomes to calculate the pangenome from.
+
+02: Filter to remove too short genes. I think 300 nucleotides is a good minimum length. This step is because prodigal tends to return a bunch of short genes which can be partial genes too short to use or just inaccurate pseudo gene calls.
+
+Run CD-HIT.
+CD-HIT-EST parameters:
+cd-hit-est -i ${g} -o ${o} -c 0.9 -n 8 -G 0 -g 1 -aS 0.7 -M 10000 -d 0 -T 10
+
+${g} is the concatenated genes file
+${o} is the name for the output file.
+
+03: generate a binary matrix of gene presence or absence for each MAG/Genome. This is a matrix with the MAGs/Genomes as the column names and the gene clusters as the row names. The data is a 1 if the MAG has a gene in the cluster or a 0 if the MAG is missing from the cluster.
+
+04: Compute Pangenome Analysis from the binary matrix.
+
+To use the scripts have python 3.6+ installed with additional packages 
+(Numpy, Pandas, LMfit, Matplotlib) and type:
+
+```bash
+python scriptname.py -h
+```
+
+# Pangenome Analysis Pipeline using Prodigal and CD-HIT
 
 Scripts written for Python version 3.6+
 
