@@ -23,7 +23,7 @@ import seaborn as sns
 
 sys.setrecursionlimit(50000)
 
-def plot_clustermap(binary_matrix, core_threshold, w, h, f, excore, exspec):
+def plot_clustermap(binary_matrix, core_threshold, w, h, x, excore, exspec):
     ''' Takes a binary matrix input file in tsv format that includes
         a header row and index column and builds a clustermap plot '''
 
@@ -48,6 +48,8 @@ def plot_clustermap(binary_matrix, core_threshold, w, h, f, excore, exspec):
                 f'Genome Specific Genes: {specific} | '
                 f'Variable Genes: {variable}'
                 )
+    print('\n\nPangenome Summary:\n')
+    print(data_line, '\n\n')
     # set colors
     #colors = ['#e0e0e0', '#4d4d4d']
     colors = ['#f0f0f0', '#525252']
@@ -69,6 +71,7 @@ def plot_clustermap(binary_matrix, core_threshold, w, h, f, excore, exspec):
                     )
     # Retrieve ax object to access axes features
     ax = g.ax_heatmap
+    '''
     # add data text to top of figure
     plt.text(
             0.5, 1.2, data_line,
@@ -76,14 +79,16 @@ def plot_clustermap(binary_matrix, core_threshold, w, h, f, excore, exspec):
             horizontalalignment='center', verticalalignment='center',
             transform=ax.transAxes
             )
+    '''
     # turn off y-axis labels
     ax.set_yticks([])
     # rotate x-axis labels
-    #plt.setp(ax.get_xticklabels(), rotation=90, fontsize=l)
+    plt.setp(ax.get_xticklabels(), rotation=90, fontsize=x)
     # turn off x-axis labels
-    ax.set_xticks([])
+    #ax.set_xticks([])
     # adjust plot margins
-    plt.subplots_adjust()
+    #plt.subplots_adjust()
+    plt.tight_layout()
     # set to 300 dpi for print ready figure
     matplotlib.rcParams['figure.dpi'] = 300
     # save figure and close
@@ -131,12 +136,12 @@ def main():
         default=14
         )
     parser.add_argument(
-        '-f', '--top_text_size',
-        help='(Optional) Set the size of text at top of figure (Default = 40).',
+        '-a', '--xaxis_text_size',
+        help='(Optional) Set the size of x-axis text of figure (Default = 18).',
         metavar='',
         type=int,
         required=False,
-        default=24
+        default=18
         )
     parser.add_argument(
         '-ec', '--exclude_core_genes',
@@ -152,12 +157,18 @@ def main():
         )
     args=vars(parser.parse_args())
 
+    print(
+        '\nBuilding pangenome clustermap with seaborn.clustermap using '
+        'metric: euclidean and method: ward. For more info see: '
+        'https://seaborn.pydata.org/generated/seaborn.clustermap.html'
+        )
+
     _ = plot_clustermap(
                     args['binary_matrix_tsv_file'],
                     args['set_core_threshold'],
                     args['set_figure_width'],
                     args['set_figure_height'],
-                    args['top_text_size'],
+                    args['xaxis_text_size'],
                     args['exclude_core_genes'],
                     args['exclude_genome_specific_genes']
                     )
