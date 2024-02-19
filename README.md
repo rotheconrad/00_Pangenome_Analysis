@@ -1,6 +1,6 @@
 # This pipeline hasn't been polished
 
-All of the components from this pipeline have been updated to use MMSeqs2 instead of CD-HIT and they are available in the (F100 Recombination workflow)[https://github.com/rotheconrad/F100_Prok_Recombination].
+All of the components from this pipeline have been updated to use MMSeqs2 instead of CD-HIT and they are available in the [F100 Recombination workflow](https://github.com/rotheconrad/F100_Prok_Recombination).
 ## The Basic Steps are here:
 
 Before running CD-HIT:
