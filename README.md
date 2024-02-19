@@ -82,6 +82,10 @@ conda install -c bioconda cd-hit
 
 ## Step 03: Generate binary presence/absence matrix
 
+Create a binary matrix from the CD-HIT output with "03_CD-HIT_to_binary_matrix.py" and "04c_Clustermap_fromBinary.py" creates a pangenome clustermap figure. The columns are genomes and the rows are genes. Core genes are rows with all (or nearly all) dark grey cells.
+
+![Pangenome clustermap](pangenome_clustermap.png "Example Pangenome Curve plot.")
+
 ## Step 04: Build pangenome rarefaction models and curves
 
 Currently, if you've clustered sequences with CD-HIT from multiple genomes, the clstr to binary matrix script will turn the CD-HIT cluster file into a binary matrix with genes as the rows and genomes as the columns. This script needs to be modified at line 68 so the genomeID variable retrieves the unique genomeID from your fasta sequence names.
